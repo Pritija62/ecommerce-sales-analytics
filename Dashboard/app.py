@@ -9,9 +9,9 @@ st.set_page_config(
 )
 
 #Title and description
-st.title(" E-Commerce Sales Analytics")
+st.title(" E-Commerce Sales Analytics Dashboard")
 st.markdown(
-    "An interactive analysis of sales, products, customers, sellers, and payment behavior."
+    "A detailed analysis of sales, products, customers, sellers, and payment behavior."
 )
 
 # Load processed data
@@ -30,8 +30,6 @@ payment_usage = pd.read_csv("data/processed/payment_usage.csv")
 customer_group_summary = pd.read_csv(
     "data/processed/customer_group_summary.csv"
 )
-
-st.success("Data loaded successfully!")
 
 
 
