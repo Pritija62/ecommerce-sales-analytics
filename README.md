@@ -1,5 +1,11 @@
 # E-Commerce Sales Analytics
 
+🚀 Live Dashboard
+
+https://ecommerce-sales-analytics-lvyccu8s56fly44lkktjv2.streamlit.app/
+
+Explore sales performance, product categories, customer behavior, seller performance, and payment trends through the interactive dashboard.
+
 ## Project overview
 
 This project analyzes the Olist e-commerce dataset to understand marketplace sales performance, product categories, seller concentration, customer purchasing behavior, and payment-method usage.
