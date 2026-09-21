@@ -15,20 +15,20 @@ st.markdown(
 )
 
 # Load processed data
-monthly_sales = pd.read_csv("../data/processed/monthly_sales.csv")
+monthly_sales = pd.read_csv("data/processed/monthly_sales.csv")
 
-category_revenue = pd.read_csv("../data/processed/category_revenue.csv")
+category_revenue = pd.read_csv("data/processed/category_revenue.csv")
 
-seller_performance = pd.read_csv("../data/processed/seller_performance.csv")
+seller_performance = pd.read_csv("data/processed/seller_performance.csv")
 
-customer_spending = pd.read_csv("../data/processed/customer_spending.csv")
+customer_spending = pd.read_csv("data/processed/customer_spending.csv")
 
-order_frequency = pd.read_csv("../data/processed/order_frequency.csv")
+order_frequency = pd.read_csv("data/processed/order_frequency.csv")
 
-payment_usage = pd.read_csv("../data/processed/payment_usage.csv")
+payment_usage = pd.read_csv("data/processed/payment_usage.csv")
 
 customer_group_summary = pd.read_csv(
-    "../data/processed/customer_group_summary.csv"
+    "data/processed/customer_group_summary.csv"
 )
 
 st.success("Data loaded successfully!")
