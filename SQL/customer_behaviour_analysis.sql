@@ -1,79 +1,57 @@
---  Unique customers in the customers table
+
+-- =====================================================
+-- 1. Customer-level spending and order summary
+-- =====================================================
+
+CREATE OR REPLACE VIEW customer_spending AS
 SELECT
-  COUNT(DISTINCT customer_unique_id)
-FROM customers
-
--- customers who made multiple purchases : there are 2913
-WITH analyzed_customer_orders AS (
-    SELECT
-        c.customer_unique_id,
-        COUNT(DISTINCT o.order_id) AS number_of_orders
-    FROM customers AS c
-    JOIN orders AS o
-        ON c.customer_id = o.customer_id
-    JOIN order_items AS oi
-        ON o.order_id = oi.order_id
-    GROUP BY c.customer_unique_id
-)
-SELECT COUNT(*) AS repeat_customers
-FROM analyzed_customer_orders
-WHERE number_of_orders > 1;
-
-
--- Average spending per customers
-SELECT AVG(total_spending) AS average_customer_spending
-FROM (
-    SELECT
-        c.customer_unique_id,
-        SUM(oi.price) AS total_spending
-    FROM customers c
-    JOIN orders o
-        ON c.customer_id = o.customer_id
-    JOIN order_items oi
-        ON o.order_id = oi.order_id
-    GROUP BY c.customer_unique_id
-) AS customer_spending;
-
-
--- additional sql EDA:
-
--- Highest Spending Customers 
-SELECT
-   c.customer_unique_id,
-   sum(oi.price) as price
-FROM customers c
-JOIN orders o
+    c.customer_unique_id,
+    COUNT(DISTINCT o.order_id) AS orders,
+    SUM(oi.price) AS total_spending,
+    CASE
+        WHEN COUNT(DISTINCT o.order_id) = 1
+            THEN 'One-time customer'
+        ELSE 'Repeat customer'
+    END AS customer_group
+FROM customers AS c
+JOIN orders AS o
     ON c.customer_id = o.customer_id
-join order_items oi
+JOIN order_items AS oi
     ON o.order_id = oi.order_id
-GROUP BY c.customer_unique_id
-ORDER BY price desc
-limit 5;
- 
+GROUP BY
+    c.customer_unique_id;
 
- -- state with most customers 
+
+-- =====================================================
+-- 2. One-time versus repeat customer summary
+-- =====================================================
+
+CREATE OR REPLACE VIEW customer_group_summary AS
 SELECT
-   customer_state AS states,
-   count(distinct customer_unique_id) AS no_of_customers 
-FROM customers
-GROUP BY customer_state
-ORDER BY no_of_customers desc
-LIMIT 1;
+    customer_group,
+    COUNT(*) AS customer_count,
+    SUM(total_spending) AS product_revenue,
+    COUNT(*) * 100.0
+        / SUM(COUNT(*)) OVER () AS customer_share,
+    SUM(total_spending) * 100.0
+        / SUM(SUM(total_spending)) OVER () AS revenue_share
+FROM customer_spending
+GROUP BY customer_group;
 
 
--- state generating highest revenue
+-- =====================================================
+-- 3. Main business-question result
+-- =====================================================
+
 SELECT
-   c.customer_state AS states,
-   SUM(oi.price) AS revenue
-FROM customers c
-JOIN orders o
-    ON c.customer_id = o.customer_id
-join order_items oi
-    ON o.order_id = oi.order_id
-GROUP BY c.customer_state
-ORDER BY revenue DESC
-limit 5;  
-
- 
- 
-
+    customer_group,
+    customer_count,
+    product_revenue,
+    customer_share,
+    revenue_share
+FROM customer_group_summary
+ORDER BY
+    CASE customer_group
+        WHEN 'One-time customer' THEN 1
+        WHEN 'Repeat customer' THEN 2
+    END;

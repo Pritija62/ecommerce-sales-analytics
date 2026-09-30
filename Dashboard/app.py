@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
+import plotly.express as px
 
 # Page configuration
 st.set_page_config(
@@ -11,7 +13,7 @@ st.set_page_config(
 #Title and description
 st.title(" E-Commerce Sales Analytics Dashboard")
 st.markdown(
-    "A detailed analysis of sales, products, customers, sellers, and payment behavior."
+    "A detailed analysis of sales, products and customers behavior."
 )
 
 # Load processed data
@@ -19,13 +21,9 @@ monthly_sales = pd.read_csv("data/processed/monthly_sales.csv")
 
 category_revenue = pd.read_csv("data/processed/category_revenue.csv")
 
-seller_performance = pd.read_csv("data/processed/seller_performance.csv")
-
 customer_spending = pd.read_csv("data/processed/customer_spending.csv")
 
 order_frequency = pd.read_csv("data/processed/order_frequency.csv")
-
-payment_usage = pd.read_csv("data/processed/payment_usage.csv")
 
 customer_group_summary = pd.read_csv(
     "data/processed/customer_group_summary.csv"
@@ -61,37 +59,77 @@ st.divider()
 
 st.subheader("Sales Performance")
 
-col1, col2 = st.columns(2)
-
-with col1:
-    st.markdown("### Monthly Revenue")
-
-    st.line_chart(
-        monthly_sales.set_index("month")["revenue"]
-    )
-
-with col2:
-    st.markdown("### Monthly Orders")
-
-    st.line_chart(
-        monthly_sales.set_index("month")["orders"]
-    )
-
-st.markdown("### Monthly Average Order Value")
-
-st.line_chart(
-    monthly_sales.set_index("month")["aov"]
+fig = px.line(
+    monthly_sales,
+    x="month",
+    y="revenue",
+    markers=True,
+    title="Monthly Revenue"
 )
+
+fig.update_layout(
+    xaxis_title="Month",
+    yaxis_title="Revenue"
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
+
+fig = px.line(
+    monthly_sales,
+    x="month",
+    y="orders",
+    markers=True,
+    title="Monthly orders"
+)
+
+fig.update_layout(
+    xaxis_title="Month",
+    yaxis_title="Orders"
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
+
+fig = px.line(
+    monthly_sales,
+    x="month",
+    y="aov",
+    markers=True,
+    title="Monthly Average Order Value"
+)
+
+fig.update_layout(
+    xaxis_title="Month",
+    yaxis_title="Average Order Value"
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
+
 
 highest_revenue_month = monthly_sales.loc[
     monthly_sales["revenue"].idxmax()
 ]
 
-st.metric(
-    "Highest-Revenue Month",
-    str(highest_revenue_month["month"]),
-    f"${highest_revenue_month['revenue']:,.2f} revenue | "
-    f"{highest_revenue_month['orders']:,.0f} orders"
+lowest_revenue_month = monthly_sales.loc[
+    monthly_sales["revenue"].idxmin()
+]
+col1, col2 = st.columns(2)
+with col1:
+    st.metric(
+        "Highest-Revenue Month",
+        str(highest_revenue_month["month"]),
+        f"${highest_revenue_month['revenue']:,.2f} revenue | "
+        f"{highest_revenue_month['orders']:,.0f} orders"
+)
+
+with col2:
+    st.metric(
+        "Lowest-Revenue Month",
+        str(lowest_revenue_month["month"]),
+        f"${lowest_revenue_month['revenue']:,.2f} revenue | "
+        f"{lowest_revenue_month['orders']:,.0f} orders"
 )
 
 
@@ -100,36 +138,50 @@ st.divider()
 
 st.subheader("Product Performance")
 
+st.markdown("### Top Categories by Revenue")
 top_categories = category_revenue.head(10).copy()
 
 # Format category names for display
 category_display = top_categories.copy()
-category_display["product_category_name"] = (
-    category_display["product_category_name"]
+top_categories["category_display"] = (
+    top_categories["product_category_name"]
     .str.replace("_", " ")
     .str.title()
 )
-st.bar_chart(
-    category_display.set_index("product_category_name")["revenue"]
+
+fig = px.bar(
+    top_categories.sort_values("revenue"),
+    x="revenue",
+    y="product_category_name",
+    orientation="h",
+    title="Top 10 Categories by Revenue",
+    text_auto=".2s",
+    color="revenue",
+    color_continuous_scale="magenta"
 )
 
-st.markdown("### Top Categories by Order-Item Volume")
+st.plotly_chart(fig, use_container_width=True)
+
+
+
 
 top_volume_categories = category_revenue.sort_values(
     "items_sold",
     ascending=False
 ).head(10).copy()
 
-volume_category_display = top_volume_categories.copy()
-volume_category_display["product_category_name"] = (
-    volume_category_display["product_category_name"]
-    .str.replace("_", " ")
-    .str.title()
+fig = px.bar(
+    top_volume_categories.sort_values("items_sold"),
+    x="items_sold",
+    y="product_category_name",
+    orientation="h",
+    title="Top 10 Categories by Order-Item Volume",
+    text_auto=True,
+    color="items_sold",
+    color_continuous_scale="blues"
 )
 
-st.bar_chart(
-    volume_category_display.set_index("product_category_name")["items_sold"]
-)
+st.plotly_chart(fig, use_container_width=True)
 
 st.markdown("### Category Revenue Share")
 
@@ -148,53 +200,51 @@ st.dataframe(
 )
 
 
-# seller performance
-st.divider()
 
-st.subheader("Seller Performance")
 
-top_sellers = seller_performance.head(10).copy()
-
-st.bar_chart(
-    top_sellers.set_index("seller_id")["revenue"]
-)
-
-total_seller_revenue = seller_performance["revenue"].sum()
-top_10_seller_revenue = top_sellers["revenue"].sum()
-top_10_seller_revenue_share = (
-    top_10_seller_revenue / total_seller_revenue * 100
-)
-
-seller_col1, seller_col2, seller_col3 = st.columns(3)
-
-with seller_col1:
-    st.metric(
-        "Total Seller Product Revenue",
-        f"${total_seller_revenue:,.2f}"
-    )
-
-with seller_col2:
-    st.metric(
-        "Top 10 Seller Revenue",
-        f"${top_10_seller_revenue:,.2f}"
-    )
-
-with seller_col3:
-    st.metric(
-        "Top 10 Revenue Share",
-        f"{top_10_seller_revenue_share:.2f}%"
-    )
 
 # customer behavior
 st.divider()
 
 st.subheader("Customer Behavior")
 
-st.bar_chart(
-    order_frequency.set_index("orders")["number_of_customers"]
+# Ensure a consistent customer-group order
+customer_group_order = [
+    "One-time customer",
+    "Repeat customer"
+]
+
+customer_group_summary["customer_group"] = pd.Categorical(
+    customer_group_summary["customer_group"],
+    categories=customer_group_order,
+    ordered=True
 )
 
-st.markdown("### One-Time vs Repeat Customers")
+customer_group_summary = customer_group_summary.sort_values(
+    "customer_group"
+)
+
+col1, col2 = st.columns(2)
+
+with col1:
+    st.markdown("### Customer Count by Group")
+
+    customer_count_chart = customer_group_summary.set_index(
+        "customer_group"
+    )[["customer_count"]]
+
+    st.bar_chart(customer_count_chart)
+
+with col2:
+    st.markdown("### Product Revenue by Group")
+
+    revenue_chart = customer_group_summary.set_index(
+        "customer_group"
+    )[["product_revenue"]]
+
+    st.bar_chart(revenue_chart)
+
+st.markdown("### Customer Group Summary")
 
 customer_group_display = customer_group_summary.rename(
     columns={
@@ -211,36 +261,20 @@ st.dataframe(
     hide_index=True
 )
 
-st.bar_chart(
-    customer_group_summary.set_index("customer_group")[
-        ["customer_share", "revenue_share"]
-    ]
+
+
+st.markdown("### Order Frequency Distribution")
+
+fig, ax = plt.subplots(figsize=(8, 4))
+
+ax.bar(
+    order_frequency["orders"],
+    order_frequency["number_of_customers"]
 )
 
+ax.set_title("Number of Customers by Order Frequency")
+ax.set_xlabel("Number of Orders")
+ax.set_ylabel("Number of Customers")
 
-
-# payment behaviour
-st.divider()
-
-st.subheader("Payment Behavior")
-
-st.bar_chart(
-    payment_usage.set_index("payment_type")["payment_counts"]
-)
-
-st.markdown("### Payment Share and Average Payment Value")
-
-payment_display = payment_usage.rename(
-    columns={
-        "payment_type": "Payment method",
-        "payment_counts": "Payment records",
-        "total_value": "Total value",
-        "payment_share": "Payment share (%)",
-        "average_payment_value": "Average payment value"
-    }
-)
-
-st.dataframe(
-    payment_display,
-    hide_index=True
-)
+st.pyplot(fig)
+plt.close(fig)
